@@ -59,7 +59,8 @@ namespace MusicBeePlugin
                     Height = prompt.Height,
                     Maximum = 60 * 1000,
                     Minimum = 1,
-                    ImeMode = ImeMode.Disable
+                    ImeMode = ImeMode.Disable,
+                    Value = Config.Instance.FadeOutTimeMills,
                 };
 
                 numericUpDown.ValueChanged += (sender, e) => {
