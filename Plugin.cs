@@ -1,4 +1,5 @@
 ﻿using System;
+using System.IO;
 using System.Runtime.InteropServices;
 using System.Drawing;
 using System.Windows.Forms;
@@ -28,7 +29,9 @@ namespace MusicBeePlugin
             about.MinInterfaceVersion = MinInterfaceVersion;
             about.MinApiRevision = MinApiRevision;
             about.ReceiveNotifications = ReceiveNotificationFlags.PlayerEvents;
-            about.ConfigurationPanelHeight = 0;   // height in pixels that musicbee should reserve in a panel for config settings. When set, a handle to an empty panel will be passed to the Configure function
+            about.ConfigurationPanelHeight = 20;   // height in pixels that musicbee should reserve in a panel for config settings. When set, a handle to an empty panel will be passed to the Configure function
+            string dataPath = mbApiInterface.Setting_GetPersistentStoragePath();
+            Config.Instance.Load(Path.Combine(dataPath, about.Name+".xml"));
             return about;
         }
 
@@ -36,19 +39,33 @@ namespace MusicBeePlugin
         {
             // save any persistent settings in a sub-folder of this path
             string dataPath = mbApiInterface.Setting_GetPersistentStoragePath();
+            Config.Instance.Load(Path.Combine(dataPath, about.Name+".xml"));
             // panelHandle will only be set if you set about.ConfigurationPanelHeight to a non-zero value
             // keep in mind the panel width is scaled according to the font the user has selected
             // if about.ConfigurationPanelHeight is set to 0, you can display your own popup window
             if (panelHandle != IntPtr.Zero)
             {
                 Panel configPanel = (Panel)Panel.FromHandle(panelHandle);
-                Label prompt = new Label();
-                prompt.AutoSize = true;
-                prompt.Location = new Point(0, 0);
-                prompt.Text = "prompt:";
-                TextBox textBox = new TextBox();
-                textBox.Bounds = new Rectangle(60, 0, 100, textBox.Height);
-                configPanel.Controls.AddRange(new Control[] { prompt, textBox });
+                Label prompt = new Label
+                {
+                    AutoSize = true,
+                    Location = new Point(0, 0),
+                    Text = "FadeOut Time (ms):"
+                };
+                NumericUpDown numericUpDown = new NumericUpDown
+                {
+                    Location = new Point(prompt.Width + 10, 0),
+                    Width = 120,
+                    Height = prompt.Height,
+                    Maximum = 60 * 1000,
+                    Minimum = 1,
+                    ImeMode = ImeMode.Disable
+                };
+
+                numericUpDown.ValueChanged += (sender, e) => {
+                    Config.Instance.FadeOutTimeMills = Convert.ToInt32(numericUpDown.Value);
+                };
+                configPanel.Controls.AddRange(new Control[] { prompt, numericUpDown });
             }
             return false;
         }
@@ -59,6 +76,7 @@ namespace MusicBeePlugin
         {
             // save any persistent settings in a sub-folder of this path
             string dataPath = mbApiInterface.Setting_GetPersistentStoragePath();
+            Config.Instance.Save(Path.Combine(dataPath, about.Name+".xml"));
         }
 
         // MusicBee is closing the plugin (plugin is being disabled by user or MusicBee is shutting down)
@@ -69,6 +87,8 @@ namespace MusicBeePlugin
         // uninstall this plugin - clean up any persisted files
         public void Uninstall()
         {
+            string dataPath = mbApiInterface.Setting_GetPersistentStoragePath();
+            File.Delete(Path.Combine(dataPath, about.Name+".xml"));
         }
 
         // receive event notifications from MusicBee
@@ -90,7 +110,7 @@ namespace MusicBeePlugin
         {
             float volume = mbApiInterface.Player_GetVolume();
             if (volume == 0) { return; }
-            int delay = Convert.ToInt32(Math.Round(3000 / (volume * 100)));
+            int delay = Convert.ToInt32(Math.Round(Config.Instance.FadeOutTimeMills / (volume * 100)));
             for (float i = volume; i > 0; i -= 0.01F)
             {
                 mbApiInterface.Player_SetVolume(i);
