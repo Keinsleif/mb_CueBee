@@ -31,7 +31,7 @@ namespace MusicBeePlugin
             about.ReceiveNotifications = ReceiveNotificationFlags.PlayerEvents;
             about.ConfigurationPanelHeight = 20;   // height in pixels that musicbee should reserve in a panel for config settings. When set, a handle to an empty panel will be passed to the Configure function
             string dataPath = mbApiInterface.Setting_GetPersistentStoragePath();
-            Config.Instance.Load(Path.Combine(dataPath, about.Name+".xml"));
+            Config.Instance.Load(Path.Combine(dataPath, about.Name + ".xml"));
             return about;
         }
 
@@ -39,7 +39,7 @@ namespace MusicBeePlugin
         {
             // save any persistent settings in a sub-folder of this path
             string dataPath = mbApiInterface.Setting_GetPersistentStoragePath();
-            Config.Instance.Load(Path.Combine(dataPath, about.Name+".xml"));
+            Config.Instance.Load(Path.Combine(dataPath, about.Name + ".xml"));
             // panelHandle will only be set if you set about.ConfigurationPanelHeight to a non-zero value
             // keep in mind the panel width is scaled according to the font the user has selected
             // if about.ConfigurationPanelHeight is set to 0, you can display your own popup window
@@ -52,21 +52,31 @@ namespace MusicBeePlugin
                     Location = new Point(0, 0),
                     Text = "FadeOut Time (ms):"
                 };
-                NumericUpDown numericUpDown = new NumericUpDown
+                TextBox textBox = new TextBox
                 {
-                    Location = new Point(prompt.Width + 10, 0),
-                    Width = 120,
-                    Height = prompt.Height,
-                    Maximum = 60 * 1000,
-                    Minimum = 1,
-                    ImeMode = ImeMode.Disable,
-                    Value = Config.Instance.FadeOutTimeMills,
+                    Bounds = new Rectangle(prompt.Width + 10, 0, 120, prompt.Height),
+                    Text = Config.Instance.FadeOutTimeMills.ToString(),
+                    ShortcutsEnabled = false,
                 };
 
-                numericUpDown.ValueChanged += (sender, e) => {
-                    Config.Instance.FadeOutTimeMills = Convert.ToInt32(numericUpDown.Value);
+                textBox.MouseClick += (sender, e) =>
+                {
+                    textBox.SelectAll();
                 };
-                configPanel.Controls.AddRange(new Control[] { prompt, numericUpDown });
+
+                textBox.TextChanged += (sender, e) =>
+                {
+                    if (System.Text.RegularExpressions.Regex.IsMatch(textBox.Text, "  ^ [0-9]"))
+                    {
+                        textBox.Text = Config.Instance.DefaultFadeOutTimeMills.ToString();
+                    }
+                    else if (Convert.ToInt32(textBox.Text) == 0)
+                    {
+                        textBox.Text = Config.Instance.DefaultFadeOutTimeMills.ToString();
+                    }
+                    Config.Instance.FadeOutTimeMills = Convert.ToInt32(textBox.Text);
+                };
+                configPanel.Controls.AddRange(new Control[] { prompt, textBox });
             }
             return false;
         }
@@ -77,7 +87,7 @@ namespace MusicBeePlugin
         {
             // save any persistent settings in a sub-folder of this path
             string dataPath = mbApiInterface.Setting_GetPersistentStoragePath();
-            Config.Instance.Save(Path.Combine(dataPath, about.Name+".xml"));
+            Config.Instance.Save(Path.Combine(dataPath, about.Name + ".xml"));
         }
 
         // MusicBee is closing the plugin (plugin is being disabled by user or MusicBee is shutting down)
@@ -89,7 +99,7 @@ namespace MusicBeePlugin
         public void Uninstall()
         {
             string dataPath = mbApiInterface.Setting_GetPersistentStoragePath();
-            File.Delete(Path.Combine(dataPath, about.Name+".xml"));
+            File.Delete(Path.Combine(dataPath, about.Name + ".xml"));
         }
 
         // receive event notifications from MusicBee
