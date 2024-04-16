@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Drawing;
@@ -124,6 +124,11 @@ namespace MusicBeePlugin
             int delay = Convert.ToInt32(Math.Round(Config.Instance.FadeOutTimeMills / (volume * 100)));
             for (float i = volume; i > 0; i -= 0.01F)
             {
+                if (!mbApiInterface.Player_GetPlayState().Equals(PlayState.Playing))
+                {
+                    mbApiInterface.Player_SetVolume(volume);
+                    return;
+                }
                 mbApiInterface.Player_SetVolume(i);
                 await Task.Delay(delay);
             }
