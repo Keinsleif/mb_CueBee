@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Drawing;
@@ -111,13 +111,13 @@ namespace MusicBeePlugin
             {
                 case NotificationType.PluginStartup:
                     // perform startup initialisation
-                    mbApiInterface.MB_RegisterCommand("Player: Volume FadeOut", (object sender, EventArgs e) => { FadeOut(sender, e).ContinueWith(_ => {; }); });
-                    mbApiInterface.MB_RegisterCommand("Player: Volume FadeOut and Play Next", (object sender, EventArgs e) => { FadeOutAndPlayNext(sender, e).ContinueWith(_ => {; }); });
+                    mbApiInterface.MB_RegisterCommand("Player: Volume FadeOut", (object sender, EventArgs e) => { FadeOut().ContinueWith(_ => {; }); });
+                    mbApiInterface.MB_RegisterCommand("Player: Volume FadeOut and Play Next", (object sender, EventArgs e) => { FadeOutAndPlayNext().ContinueWith(_ => {; }); });
                     break;
             }
         }
 
-        private async Task FadeOut(object sender, EventArgs e)
+        private async Task FadeOut()
         {
             float volume = mbApiInterface.Player_GetVolume();
             if (volume == 0) { return; }
@@ -136,9 +136,9 @@ namespace MusicBeePlugin
             mbApiInterface.Player_SetVolume(volume);
         }
 
-        private async Task FadeOutAndPlayNext(object sender, EventArgs e)
+        private async Task FadeOutAndPlayNext()
         {
-            await FadeOut(sender, e);
+            await FadeOut();
             mbApiInterface.Player_PlayNextTrack();
         }
     }
