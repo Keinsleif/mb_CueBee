@@ -29,7 +29,7 @@ namespace MusicBeePlugin
             about.MinInterfaceVersion = MinInterfaceVersion;
             about.MinApiRevision = MinApiRevision;
             about.ReceiveNotifications = ReceiveNotificationFlags.PlayerEvents;
-            about.ConfigurationPanelHeight = 60;   // height in pixels that musicbee should reserve in a panel for config settings. When set, a handle to an empty panel will be passed to the Configure function
+            about.ConfigurationPanelHeight = 20;   // height in pixels that musicbee should reserve in a panel for config settings. When set, a handle to an empty panel will be passed to the Configure function
             string dataPath = mbApiInterface.Setting_GetPersistentStoragePath();
             Config.Instance.Load(Path.Combine(dataPath, about.Name + ".xml"));
             return about;
@@ -50,12 +50,11 @@ namespace MusicBeePlugin
                 {
                     AutoSize = true,
                     Location = new Point(0, 0),
-                    Text = "FadeOut Time (ms)"
+                    Text = "FadeOut Time (ms):"
                 };
                 TextBox textBox = new TextBox
                 {
-                    Bounds = new Rectangle(0, prompt.Height, 120, prompt.Height),
-                    Height = prompt.Height,
+                    Bounds = new Rectangle(prompt.Width + 10, 0, 120, prompt.Height),
                     Text = Config.Instance.FadeOutTimeMills.ToString(),
                     ShortcutsEnabled = false,
                 };
