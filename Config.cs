@@ -84,6 +84,6 @@ namespace MusicBeePlugin
         
         public readonly int DefaultFadeOutTimeMills = 3000;
         
-        public int    FadeOutTimeMills { get; set; } = DefaultFadeOutTimeMills;
+        public int    FadeOutTimeMills { get; set; } = 3000;
     }
 }
