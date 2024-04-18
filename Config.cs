@@ -82,8 +82,8 @@ namespace MusicBeePlugin
         private static Config instance = new Config();
         public  static Config Instance { get { return Config.instance; } }
         
-        public readonly int DefaultFadeOutTimeMills = 3000;
+        public readonly int    DefaultFadeOutTimeMills = 3000;
         
-        public int    FadeOutTimeMills { get; set; } = DefaultFadeOutTimeMills;
+        public int    FadeOutTimeMills { get; set; }
     }
 }
