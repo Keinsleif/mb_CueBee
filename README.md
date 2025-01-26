@@ -15,6 +15,10 @@ Download `mb_CueBee.dll` from [Release Page](https://github.com/Keinsleif/mb_Cue
 
 Put the downloaded `mb_CueBee.dll` to `MusicBee/Plugins` Folder.
 
+In generally `MusicBee/Plugins` Folder is in there on Installer Edition
+- C:\Users\[User Name]\AppData\Roaming\MusicBee\Plugins  
+- C:\Program Files (x86)\MusicBee\Plugins  
+
 ### Windows Store Edition
 
 Go to MusicBee => Edit => Edit Preferences and then locate the Plugins settings.
