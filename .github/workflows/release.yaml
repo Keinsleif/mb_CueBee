@@ -48,13 +48,8 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
     - name: Upload Release Asset
-      id: upload-release-asset 
-      uses: svenstaro/upload-release-action@v2
-      with:
-        repo_token: ${{ secrets.GITHUB_TOKEN }}
-        file: ./bin/Release/net481/mb_CueBee.dll
-        asset_name: mb_CueBee.dll
-        tag: ${{ steps.create-draft.outputs.tag_name }}
-        overwrite: true
-        draft: true
-        body: ${{ steps.create-draft.outputs.body }}
+      run: |
+        cp ./bin/Release/net481/mb_CueBee.dll ./mb_CueBee.dll
+        gh release upload ${{ steps.create-draft.outputs.tag_name }} "mb_CueBee.dll" --clobber
+      env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
