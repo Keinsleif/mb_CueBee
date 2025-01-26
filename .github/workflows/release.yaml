@@ -57,3 +57,4 @@ jobs:
         tag: ${{ steps.create-draft.outputs.tag_name }}
         overwrite: true
         draft: true
+        body: ${{ steps.create-draft.outputs.body }}
