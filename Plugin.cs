@@ -13,6 +13,9 @@ namespace MusicBeePlugin
         private MusicBeeApiInterface mbApiInterface;
         private PluginInfo about = new PluginInfo();
 
+        private float volume = 0.0f;
+        private bool isFading = false;
+
         public PluginInfo Initialise(IntPtr apiInterfacePtr)
         {
             mbApiInterface = new MusicBeeApiInterface();
@@ -29,7 +32,7 @@ namespace MusicBeePlugin
             about.MinInterfaceVersion = MinInterfaceVersion;
             about.MinApiRevision = MinApiRevision;
             about.ReceiveNotifications = ReceiveNotificationFlags.PlayerEvents;
-            about.ConfigurationPanelHeight = 20;   // height in pixels that musicbee should reserve in a panel for config settings. When set, a handle to an empty panel will be passed to the Configure function
+            about.ConfigurationPanelHeight = 50;   // height in pixels that musicbee should reserve in a panel for config settings. When set, a handle to an empty panel will be passed to the Configure function
             string dataPath = mbApiInterface.Setting_GetPersistentStoragePath();
             Config.Instance.Load(Path.Combine(dataPath, about.Name + ".xml"));
             return about;
@@ -46,37 +49,55 @@ namespace MusicBeePlugin
             if (panelHandle != IntPtr.Zero)
             {
                 Panel configPanel = (Panel)Panel.FromHandle(panelHandle);
-                Label prompt = new Label
+                configPanel.SuspendLayout();
+
+                FlowLayoutPanel settings = new FlowLayoutPanel {
+                    FlowDirection = FlowDirection.TopDown,
+                    WrapContents = true,
+                    Dock = DockStyle.Fill
+                };
+
+                FlowLayoutPanel fadeOutSettings = new FlowLayoutPanel {
+                    FlowDirection = FlowDirection.LeftToRight,
+                    WrapContents = true,
+                };
+
+                Label fadeOutPrompt = new Label
                 {
                     AutoSize = true,
-                    Location = new Point(0, 0),
                     Text = "FadeOut Time (ms):"
                 };
-                TextBox textBox = new TextBox
+                TextBox fadeOutTime = new TextBox
                 {
-                    Bounds = new Rectangle(prompt.Width + 10, 0, 120, prompt.Height),
                     Text = Config.Instance.FadeOutTimeMills.ToString(),
                     ShortcutsEnabled = false,
                 };
 
-                textBox.MouseClick += (sender, e) =>
+                fadeOutTime.MouseClick += (sender, e) =>
                 {
-                    textBox.SelectAll();
+                    fadeOutTime.SelectAll();
                 };
 
-                textBox.TextChanged += (sender, e) =>
+                fadeOutTime.TextChanged += (sender, e) =>
                 {
-                    if (System.Text.RegularExpressions.Regex.IsMatch(textBox.Text, "  ^ [0-9]"))
+                    if (System.Text.RegularExpressions.Regex.IsMatch(fadeOutTime.Text, "  ^ [0-9]"))
                     {
-                        textBox.Text = Config.Instance.DefaultFadeOutTimeMills.ToString();
+                        fadeOutTime.Text = Config.Instance.DefaultFadeOutTimeMills.ToString();
                     }
-                    else if (Convert.ToInt32(textBox.Text) == 0)
+                    else if (Convert.ToInt32(fadeOutTime.Text) == 0)
                     {
-                        textBox.Text = Config.Instance.DefaultFadeOutTimeMills.ToString();
+                        fadeOutTime.Text = Config.Instance.DefaultFadeOutTimeMills.ToString();
                     }
-                    Config.Instance.FadeOutTimeMills = Convert.ToInt32(textBox.Text);
+                    Config.Instance.FadeOutTimeMills = Convert.ToInt32(fadeOutTime.Text);
                 };
-                configPanel.Controls.AddRange(new Control[] { prompt, textBox });
+
+                fadeOutSettings.Controls.Add(fadeOutPrompt);
+                fadeOutSettings.Controls.Add(fadeOutTime);
+
+                settings.Controls.Add(fadeOutSettings);
+
+                configPanel.Controls.Add(settings);
+                configPanel.ResumeLayout();
             }
             return false;
         }
@@ -93,6 +114,9 @@ namespace MusicBeePlugin
         // MusicBee is closing the plugin (plugin is being disabled by user or MusicBee is shutting down)
         public void Close(PluginCloseReason reason)
         {
+            if (isFading) {
+                    mbApiInterface.Player_SetVolume(volume);
+            }
         }
 
         // uninstall this plugin - clean up any persisted files
@@ -112,6 +136,7 @@ namespace MusicBeePlugin
                 case NotificationType.PluginStartup:
                     // perform startup initialisation
                     mbApiInterface.MB_RegisterCommand("Player: Volume FadeOut", (object sender, EventArgs e) => { FadeOut().ContinueWith(_ => {; }); });
+                    mbApiInterface.MB_RegisterCommand("Player: Volume FadeOut and Stop", (object sender, EventArgs e) => { FadeOutAndStop().ContinueWith(_ => {; }); });
                     mbApiInterface.MB_RegisterCommand("Player: Volume FadeOut and Play Next", (object sender, EventArgs e) => { FadeOutAndPlayNext().ContinueWith(_ => {; }); });
                     break;
             }
@@ -119,19 +144,27 @@ namespace MusicBeePlugin
 
         private async Task FadeOut()
         {
-            float volume = mbApiInterface.Player_GetVolume();
-            if (volume == 0) { return; }
+            if (isFading) { return; }
+            isFading = true;
+            volume = mbApiInterface.Player_GetVolume();
+            if (volume == 0.0f || mbApiInterface.Player_GetMute()) { return; }
             int delay = Convert.ToInt32(Math.Round(Config.Instance.FadeOutTimeMills / (volume * 100)));
             for (float i = volume; i > 0; i -= 0.01F)
             {
                 if (!mbApiInterface.Player_GetPlayState().Equals(PlayState.Playing))
                 {
                     mbApiInterface.Player_SetVolume(volume);
+                    isFading = false;
                     return;
                 }
                 mbApiInterface.Player_SetVolume(i);
                 await Task.Delay(delay);
             }
+            isFading = false;
+        }
+
+        private async Task FadeOutAndStop() {
+            await FadeOut();
             mbApiInterface.Player_Stop();
             mbApiInterface.Player_SetVolume(volume);
         }
@@ -139,6 +172,7 @@ namespace MusicBeePlugin
         private async Task FadeOutAndPlayNext()
         {
             await FadeOut();
+            mbApiInterface.Player_SetVolume(volume);
             mbApiInterface.Player_PlayNextTrack();
         }
     }
