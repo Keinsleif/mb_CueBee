@@ -56,3 +56,4 @@ jobs:
         asset_name: mb_CueBee.dll
         tag: ${{ steps.create-draft.outputs.tag_name }}
         overwrite: true
+        draft: true
